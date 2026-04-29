@@ -224,21 +224,6 @@ class x402ServerExecutor(x402BaseExecutor, metaclass=ABCMeta):
         ):
             task.status.message.metadata = {}
         try:
-            logger.info("Executing delegate agent...")
-            await self._delegate.execute(context, event_queue)
-            logger.info("Delegate agent execution finished.")
-        except Exception as e:
-            logger.error(f"Exception during delegate execution: {e}", exc_info=True)
-            return await self._fail_payment(
-                task,
-                x402ErrorCode.SETTLEMENT_FAILED,
-                f"Service failed: {e}",
-                event_queue,
-            )
-
-        logger.info("Delegate execution complete. Proceeding to settlement.")
-
-        try:
             logger.info("Calling self.settle_payment...")
             settle_response = await self.settle_payment(
                 payment_payload, payment_requirements
@@ -263,6 +248,9 @@ class x402ServerExecutor(x402BaseExecutor, metaclass=ABCMeta):
                 )
 
                 self._payment_requirements_store.pop(task.id, None)
+                
+                return
+                
             await event_queue.enqueue_event(task)
             logger.info("Settlement processing finished.")
         except Exception as e:
@@ -273,7 +261,20 @@ class x402ServerExecutor(x402BaseExecutor, metaclass=ABCMeta):
                 f"Settlement failed: {e}",
                 event_queue,
             )
-
+        try:
+            logger.info("Executing delegate agent...")
+            await self._delegate.execute(context, event_queue)
+            logger.info("Delegate agent execution finished.")
+        except Exception as e:
+            logger.error(f"Exception during delegate execution: {e}", exc_info=True)
+            return await self._fail_payment(
+                task,
+                x402ErrorCode.SETTLEMENT_FAILED,
+                f"Service failed: {e}",
+                event_queue,
+            )
+        logger.info("Delegate execution complete.")
+        
     def _find_matching_payment_requirement(
         self,
         accepts_array: List[PaymentRequirements],
