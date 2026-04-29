@@ -15,6 +15,7 @@
 
 import datetime
 import json
+import secrets
 import logging
 import os
 from typing import Optional, cast
@@ -168,7 +169,7 @@ def process_payment(
 
     # --- 1. Get the current nonce from the contract ---
     nonce_uint = asset_contract.functions.nonces(account.address).call()
-    nonce_bytes = nonce_uint.to_bytes(32, "big")
+    nonce_bytes = secrets.token_bytes(32)
 
     # --- 2. Generate the authorization data ONCE ---
     auth_data = {

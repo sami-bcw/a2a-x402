@@ -119,7 +119,9 @@ class x402Utils:
         if req_data:
             try:
                 return x402PaymentRequiredResponse.model_validate(req_data)
-            except Exception:
+            except Exception as e:
+                print("❌ FAILED TO PARSE PAYMENT REQUIREMENTS:", e)
+                print("RAW DATA:", req_data)
                 return None
         return None
 
